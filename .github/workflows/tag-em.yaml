@@ -14,4 +14,4 @@ jobs:
       - name: Tag commit
         run: git tag -f cw_ccbd_2020 HEAD
       - name: Push tag update
-        run: git push --tags
+        run: git push --tags -f
