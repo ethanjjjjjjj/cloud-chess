@@ -12,6 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Tag commit
-        run: git tag -f cw_ccbd_2020 HEAD
+        run: git tag -f cw_ccbd_2020 HEAD && git tag -f cw_ccbd_2021 HEAD
       - name: Push tag update
         run: git push --tags -f
