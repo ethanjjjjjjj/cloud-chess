@@ -8,8 +8,9 @@ if (len(sys.argv) <= 1):
     raise ValueError("Specify a FEN as an argument.")
 fen = sys.argv[1]
 
-with app.test_request_context():
-    r = request.post(URL, data = {'fen' : fen})
+data={'fen':fen}
+with app.test_request_context(URL, data):
+    r = request.post(URL, data)
 
 print(r)
 """
