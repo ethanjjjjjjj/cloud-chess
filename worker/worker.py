@@ -27,7 +27,7 @@ mdb=m["game"]
 fens=mdb.fens
 engine1=chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
 while True:
-    uuid=str(r.blpop("work")[1])
+    uuid=r.blpop("work")[1].decode("utf-8")
     print(uuid)
     start=time.time()
     doc=fens.find_one({"_id": uuid})
@@ -38,10 +38,10 @@ while True:
     #board=chess.Board(fen=uuid)
     #board=chess.Board(fen="r5k1/pp2n1p1/5p2/2p2r1p/1P5P/1P2P3/PB4P1/1K3B1R w - - 0 26")
     result= engine1.analyse(board,chess.engine.Limit(depth=22))
-    #print(result)
-    doc["result"]=result
+    print(result)
+    doc["result"]=str(result)
     doc["status"]="done"
-    uuid=mdb.insert_one(doc)
+    uuid=fens.update({"_id":doc["_id"]},doc)
     print(time.time()-start)
 
 print(result)
