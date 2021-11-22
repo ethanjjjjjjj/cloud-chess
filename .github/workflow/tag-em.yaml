@@ -1,0 +1,18 @@
+name: tag-em
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  tagem:
+    name: tagem
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Tag commit
+        uses: tvdias/github-tagger@v0.0.1
+        with:
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+          tag: "cw_ccbd_2020"
