@@ -12,7 +12,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Tag commit
-        uses: tvdias/github-tagger@v0.0.1
-        with:
-          repo-token: "${{ secrets.GITHUB_TOKEN }}"
-          tag: "cw_ccbd_2020"
+        run: git tag -f cw_ccbd_2020 HEAD
+      - name: Push tag update
+        run: git push --tags
