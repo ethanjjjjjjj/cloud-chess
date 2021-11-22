@@ -1,16 +1,14 @@
-from flask import request, Flask
+import requests
 import sys
 
-app=Flask(__name__)
-URL = "localhost/json-post"
+URL = "http://localhost:5000/json-post"
 
 if (len(sys.argv) <= 1): 
     raise ValueError("Specify a FEN as an argument.")
 fen = sys.argv[1]
 
 data={'fen':fen}
-with app.test_request_context(URL, data):
-    r = request.post(URL, data)
+r= requests.post(URL, json=data)
 
 print(r)
 """
