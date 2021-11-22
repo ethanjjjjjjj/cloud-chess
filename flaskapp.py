@@ -17,18 +17,22 @@ DB_NAME = "db_name" # database name
 client = MongoClient('mongodb',27017)
 db = client['game']
 
-# same as post but less complex? for short messages?
-# thing has to be in the url
+"""""
+- same as post but less complex? for short messages?
+- thing has to be in the url
+"""""
 # @app.route("/GET")
 # def get():
 #     el = r.lpop(DB_NAME)
 #     pass
 
-# send a json to the backend
-# the json contains the fen
-# recieve fen, take out of json into string, generate uuid
-# store both in the mongodb with a status pending
-# push into the queue
+"""
+- send a json to the backend
+- the json contains the fen
+- recieve fen, take out of json into string, generate uuid
+- store both in the mongodb with a status pending
+- push into the queue
+"""
 #@app.route("/POST") # ?
 @app.route('/json-post', methods=['POST'])
 def post():
