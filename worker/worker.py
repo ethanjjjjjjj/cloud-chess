@@ -22,13 +22,16 @@ r=redis.Redis("localhost",6379)
 #r=redis.Redis("localhost",6379,password=os.environ("REDISPASSWORD"))
 import pymongo
 from pymongo import MongoClient
-m=MongoClient("mongodb",27017)
+m=MongoClient("localhost",27017)
 mdb=m["game"]
+fens=mdb.fens
 engine1=chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
 while True:
-    uuid=r.blpop("workqueue")
+    uuid=str(r.blpop("work")[1])
+    print(uuid)
     start=time.time()
-    doc=mdb.find_one({"_id":uuid})
+    doc=fens.find_one({"_id": uuid})
+    print(doc)
     fen=doc["fen"]
     board=chess.Board(fen=fen)
     #update mongo saying work in progress
