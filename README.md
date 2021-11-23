@@ -41,3 +41,11 @@ Authored by: Daniel Jones, Ethan Williams, Matthew Stollery
     - This should be `while r.llen("work") > 0:` it should pop items and check the id
   - It may also be something to do with the copying of the queue into a new name - more testing is needed
   - The database component works though, just the queue part needs testing
+  - *Remember to test this on Manjaro using commands in Discord*:
+    -  sudo systemctl enable docker.service
+    -  sudo systemctl start docker.service
+    -  sudo systemctl start docker.socket
+    -  Terminal 1: docker run -it --rm -p 27017:27017 mongo
+    -  Terminal 2: docker run -it --rm -p 6379:6379 redis
+    -  Terminal 3: docker exec -it [redis-container-name] redis-cli
+    -  Terminal 3: lpop work 1
