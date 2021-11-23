@@ -43,7 +43,8 @@ def post():
     #UUID = uuid.uuid4() # generate uuid
     #UUID=UUID.__str__()
     #fen = {"_id" : UUID, "fen" : FEN, "status" : "pending", "timestamp" : datetime.datetime.utcnow()} # create the item to post in the mongoDB database, with a status of pending by default
-    fen = {"fen" : FEN, "status" : "pending", "timestamp" : datetime.datetime.utcnow()} # create the item to post in the mongoDB database, with a status of pending by default
+    fen = {"fen" : FEN, "status" : "pending"} # create the item to post in the mongoDB database, with a status of pending by default 
+                                              # something like  $convert: { input: "$_id", to: "date" }  can be used to retrieve the date from the _id and use it to query
     id = db.fens.insert_one(fen) # post the item into the database
     r.rpush(DB_NAME, id) # push the item into the redis queue
     return "{ree:'ree'}"
