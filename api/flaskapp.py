@@ -45,6 +45,7 @@ def post():
     #fen = {"_id" : UUID, "fen" : FEN, "status" : "pending", "timestamp" : datetime.datetime.utcnow()} # create the item to post in the mongoDB database, with a status of pending by default
     fen = {"fen" : FEN, "status" : "pending"} # create the item to post in the mongoDB database, with a status of pending by default 
                                               # something like  $convert: { input: "$_id", to: "date" }  can be used to retrieve the date from the _id and use it to query
+                                              # https://stackoverflow.com/questions/8749971/can-i-query-mongodb-objectid-by-date for more
     id = db.fens.insert_one(fen) # post the item into the database
     r.rpush(DB_NAME, id) # push the item into the redis queue
     return "{ree:'ree'}"
