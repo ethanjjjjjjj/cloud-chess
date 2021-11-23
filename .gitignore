@@ -1,3 +1,4 @@
 .vscode/settings.json
-api/__pycache__/
+**/__pycache__/
 worker/stockfish14-bmi
+.vscode
