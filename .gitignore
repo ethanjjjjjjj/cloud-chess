@@ -1,0 +1,3 @@
+.vscode/settings.json
+api/__pycache__/
+worker/stockfish14-bmi
