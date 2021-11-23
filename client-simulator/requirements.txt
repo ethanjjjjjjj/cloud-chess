@@ -1,2 +1,3 @@
+scipy==1.7.2
 typer==0.4.0
 python-chess==1.7.0

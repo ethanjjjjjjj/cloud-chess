@@ -2,11 +2,16 @@
 
 from datetime import datetime, timedelta
 from dataclasses import dataclass
-from typing import List, Optional, TextIO
+from typing import List, Optional
 import random
+import time
+import logging
 import requests
 import chess.pgn
 import typer
+
+logging.basicConfig(filename="client-simulator.log", filemode="w")
+log = logging.getLogger("Client")
 
 @dataclass
 class AppOptions:
@@ -36,17 +41,52 @@ def throughput(timeout: int = typer.Option(120, help="Time to run for in seconds
     start_time = datetime.now()
     current_time = start_time
 
+    completed: int = 0
+
     while current_time - start_time <= timedelta(seconds=timeout):
-        analyse_board(get_random_fen().strip())
+        if analyse_board(get_random_fen().strip()) is not None:
+            completed += 1
         current_time = datetime.now()
 
-    typer.echo(f"Time elappsed: {current_time - start_time}")
+    achieved_rate = completed / (current_time - start_time).total_seconds()
+    typer.echo(f"Completed {completed} requests in "
+               f"{(current_time - start_time).total_seconds()} seconds\n"
+               f"yielding {achieved_rate} boards/second")
 
 
 @app.command()
-def const_rate(rate: int = typer.Argument(..., help="Rate at which to submit chess boards"),
-               time: Optional[int] = typer.Argument(None, help="Time to run stress test for")):
-    typer.echo(f"hi {rate}")
+def const_rate(rate: int = typer.Argument(..., help="Rate at which to submit chess boards board/second"),
+               timeout: Optional[int] = typer.Option(None, help="Time to run stress test for")):
+    """ Send random chess boards at a constant rate """
+    start_time = datetime.now()
+    current_time = start_time
+
+    expected_ellapse = timedelta(seconds=1/rate)
+    completed: int = 0
+
+    while timeout is None or current_time - start_time <= timedelta(seconds=timeout):
+        analyse_board(get_random_fen().strip())
+        completed += 1
+
+        new_time = datetime.now()
+        ellapsed_time = new_time - current_time
+
+        if ellapsed_time < expected_ellapse:
+            time.sleep((expected_ellapse - ellapsed_time).total_seconds())
+            current_time = datetime.now()
+        elif ellapsed_time > expected_ellapse:
+            log.warning("Cant keep up took %s when should of taken %s",
+                        ellapsed_time, expected_ellapse)
+            current_time = new_time
+        else:
+            current_time = new_time
+
+
+    achieved_rate = completed / (current_time - start_time).total_seconds()
+    typer.echo(f"Completed {completed} requests in "
+               f"{(current_time - start_time).total_seconds()} seconds\n"
+               f"yielding {achieved_rate} boards/second")
+
 
 
 @app.command()
@@ -65,7 +105,7 @@ def convert_pgn(pgn_file: str, output_file: str):
 
 
 @app.callback()
-def main(url: str = typer.Option("localhost", help="URL of the ingress"),
+def main(url: str = typer.Option("https://localhost:3030", help="URL of the ingress"),
          fen_file: str = typer.Option("lichess_jan_2013.fens", help="File containing FENs")):
     app_options.url = url
 
