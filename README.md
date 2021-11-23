@@ -31,3 +31,13 @@ Authored by: Daniel Jones, Ethan Williams, Matthew Stollery
 [Flask Quickstart](https://flask.palletsprojects.com/en/2.0.x/quickstart/)
 
 [HTTP Methods](https://www.w3schools.com/tags/ref_httpmethods.asp)
+
+---
+## TODO
+### In_Progress Branch
+- healer.py
+  - Fix the `searchQueue()` function, as currently it never returns True as it never finds matching UUIDs
+  - I have just realised that this is at least partially because I forgot the loop...
+    - This should be `while r.llen("work") > 0:` it should pop items and check the id
+  - It may also be something to do with the copying of the queue into a new name - more testing is needed
+  - The database component works though, just the queue part needs testing
