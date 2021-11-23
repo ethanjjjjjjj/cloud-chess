@@ -1,1 +1,2 @@
 client-simulator/fens.txt filter=lfs diff=lfs merge=lfs -text
+client-simulator/lichess_db_standard_rated_2013-01.pgn filter=lfs diff=lfs merge=lfs -text
