@@ -18,11 +18,11 @@ from chess.engine import *
 import chess
 import redis
 import time
-r=redis.Redis("localhost",6379)
+r=redis.Redis("redis",6379)
 #r=redis.Redis("localhost",6379,password=os.environ("REDISPASSWORD"))
 import pymongo
 from pymongo import MongoClient
-m=MongoClient("localhost",27017)
+m=MongoClient("mongo",27017)
 mdb=m["game"]
 fens=mdb.fens
 engine1=chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
