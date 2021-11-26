@@ -12,9 +12,9 @@ import datetime
 
 app=Flask(__name__)
 CORS(app)
-r=redis.Redis(host='localhost',port=6379)
+r=redis.Redis(host='redis',port=6379)
 DB_NAME = "work" # database name
-client = MongoClient('localhost',27017)
+client = MongoClient('mongo',27017)
 db = client['game']
 
 """""
