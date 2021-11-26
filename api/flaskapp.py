@@ -15,12 +15,12 @@ import redis
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger("app")
 
-app=Flask(__name__)
+app = Flask(__name__)
 CORS(app)
 
-r=redis.Redis(host='localhost', port=6379)
+redis_con = redis.Redis(host='redis',port=6379)
 DB_NAME = "work" # database name
-client = MongoClient('localhost', 27017)
+client = MongoClient('mongo',27017)
 db = client['game']
 
 
@@ -55,5 +55,5 @@ def post():
     fen = {"_id": fen_uuid, "fen": fen, "status": "pending", "lastqueued": queuetime}
 
     db.fens.insert_one(fen) # post the item into the database
-    r.rpush(DB_NAME, fen_uuid) # push the item into the redis queue
+    redis_con.rpush(DB_NAME, fen_uuid) # push the item into the redis queue
     return "{ree:'ree'}"

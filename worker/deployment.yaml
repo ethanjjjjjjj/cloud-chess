@@ -1,0 +1,20 @@
+Version: apps/v1
+kind: Deployment
+metadata:
+  name: chess-worker
+spec:
+  selector:
+    matchLabels:
+      app: chess-worker
+  template:
+    metadata:
+      labels:
+        app: chess-worker
+    spec:
+      containers:
+      - name: 
+        image: chess-worker
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "1000m"
