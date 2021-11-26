@@ -44,8 +44,12 @@ def throughput(timeout: int = typer.Option(120, help="Time to run for in seconds
     completed: int = 0
 
     while current_time - start_time <= timedelta(seconds=timeout):
-        if analyse_board(get_random_fen().strip()) is not None:
+        result = analyse_board(get_random_fen().strip())
+        if result is not None:
+            typer.echo(f"Got {result} from API")
             completed += 1
+        else:
+            typer.echo(f"Didn't get a valid response from API")
         current_time = datetime.now()
 
     achieved_rate = completed / (current_time - start_time).total_seconds()
@@ -65,7 +69,8 @@ def const_rate(rate: int = typer.Argument(..., help="Rate at which to submit che
     completed: int = 0
 
     while timeout is None or current_time - start_time <= timedelta(seconds=timeout):
-        analyse_board(get_random_fen().strip())
+        result = analyse_board(get_random_fen().strip())
+        typer.echo(f"Got {result} from API")
         completed += 1
 
         new_time = datetime.now()
