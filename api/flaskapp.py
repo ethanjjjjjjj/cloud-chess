@@ -3,7 +3,6 @@ Flask App providing a HTTP and WS access to the backend
 """
 
 import datetime
-import logging
 import uuid
 import sys
 
@@ -12,8 +11,6 @@ from quart_cors import cors
 from pymongo import MongoClient
 import redis
 
-logging.basicConfig(stream=sys.stdout)
-logger = logging.getLogger("app")
 
 app = Quart(__name__)
 cors(app)
@@ -36,15 +33,15 @@ async def post():
     request_data = await request.get_json() # get json
 
     if request_data is None:
-        logging.warning("Recieved an invalid request to /json-post")
+        app.logger.warning("Recieved an invalid request to /json-post")
         abort(400)
 
     if 'fen' not in request_data:
-        logging.warning("Recieved a request without valid properites")
+        app.logger.warning("Recieved a request without valid properites")
         abort(400)
 
     fen: str = request_data['fen'] # get fen from json
-    logging.info("Client requested %s to be processed", fen)
+    app.logger.info("Client requested %s to be processed", fen)
 
     fen_uuid = str(uuid.uuid4()) # generate uuid
 
