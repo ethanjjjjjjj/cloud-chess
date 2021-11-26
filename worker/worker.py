@@ -40,7 +40,7 @@ def main():
             logger.warning("Recieved a uuid (%s) with non-pending status. Skipping...", uuid)
         else:
             doc["status"]="processing"
-            fens.update({"_id": doc["_id"]}, doc)
+            fens.update_one({"_id": doc["_id"]},  {"$set":doc},True)
             fen = doc["fen"]
             board = chess.Board(fen=fen)
             #update mongo saying work in progress
@@ -50,7 +50,7 @@ def main():
             logger.info("Result of analysis is: %s", result)
             doc["result"] = str(result)
             doc["status"] = "done"
-            fens.update_one({"_id": doc["_id"]}, doc,True)
+            fens.update_one({"_id": doc["_id"]}, {"$set":doc},True)
             redis_con.rpush(uuid, str(result))
         logger.info("Done loop in %d seconds", time.time()-start)
 
