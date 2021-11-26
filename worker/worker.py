@@ -47,6 +47,7 @@ def main():
             doc["result"] = str(result)
             doc["status"] = "done"
             uuid = fens.update({"_id": doc["_id"]}, doc)
+            redis_con.rpush(uuid, str(result))
         logger.info("Done loop in %d seconds", time.time()-start)
 
 

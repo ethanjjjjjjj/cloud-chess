@@ -29,7 +29,7 @@ def get_random_fen() -> str:
 
 def analyse_board(fen: str) -> Optional[str]:
     """ Send fen to service for analysis """
-    result = requests.post(app_options.url, json={fen: fen})
+    result = requests.post(app_options.url, json={"fen": fen})
     if not result.ok:
         return None
     return result.text

@@ -7,7 +7,7 @@ import logging
 import uuid
 import sys
 
-from quart import abort, Quart, request
+from quart import abort, Quart, request, websocket
 from quart_cors import cors
 from pymongo import MongoClient
 import redis
@@ -18,9 +18,9 @@ logger = logging.getLogger("app")
 app = Quart(__name__)
 cors(app)
 
-redis_con = redis.Redis(host='redis',port=6379)
+redis_con = redis.Redis(host='redis', port=6379)
 ANALYSIS_QUEUE = "fen_analysis"
-mongo_client = MongoClient('mongo',27017)
+mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
 
 
@@ -56,5 +56,10 @@ async def post():
     game_db.fens.insert_one(fen_item) # post the item into the database
     redis_con.rpush(ANALYSIS_QUEUE, fen_uuid) # push the item into the redis queue
 
-    # TODO wait for compuation to be completed and return it
-    return "{ree: 'ree'}"
+    result = redis_con.blpop(fen_uuid)[1].decode("utf-8")
+    return {"status": "ok", "data": result}
+
+@app.websocket('/ws')
+async def ws():
+    while True:
+        data = await websocket.receive()
