@@ -36,11 +36,11 @@ def main():
             logger.warning("Cannot find document with uuid: %s", uuid)
             time.sleep(1) # Prevent CPU spiking
             redis_con.rpush(queue_name, uuid)
-        elif doc["status"]!="pending":
-            pass
+        elif doc["status"] != "pending":
+            logger.warning("Recieved a uuid (%s) with non-pending status. Skipping...", uuid)
         else:
             doc["status"]="processing"
-            fens.update({"_id": doc["_id"]}, doc)   
+            fens.update({"_id": doc["_id"]}, doc)
             fen = doc["fen"]
             board = chess.Board(fen=fen)
             #update mongo saying work in progress
