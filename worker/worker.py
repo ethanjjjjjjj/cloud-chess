@@ -1,48 +1,54 @@
-#load chess engine
+"""
+Worker node for analysing a FEN taken from the Redis queue
+"""
 
-#connect to redis
-
-#connect to database
-
-
-#start infinite loop
-
-# pop from work queue
-
-# run chess engine on fen for depth 22
-
-# export move list to database
-
-import chess.engine
-from chess.engine import *
-import chess
-import redis
+import logging
 import time
-r=redis.Redis("redis",6379)
-#r=redis.Redis("localhost",6379,password=os.environ("REDISPASSWORD"))
+import sys
+import chess
+import chess.engine
+import redis
 import pymongo
-from pymongo import MongoClient
-m=MongoClient("mongo",27017)
-mdb=m["game"]
-fens=mdb.fens
-engine1=chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
-while True:
-    uuid=r.blpop("work")[1].decode("utf-8")
-    print(uuid)
-    start=time.time()
-    doc=fens.find_one({"_id": uuid})
-    print(doc)
-    fen=doc["fen"]
-    board=chess.Board(fen=fen)
-    #update mongo saying work in progress
-    #board=chess.Board(fen=uuid)
-    #board=chess.Board(fen="r5k1/pp2n1p1/5p2/2p2r1p/1P5P/1P2P3/PB4P1/1K3B1R w - - 0 26")
-    result= engine1.analyse(board,chess.engine.Limit(depth=22))
-    print(result)
-    doc["result"]=str(result)
-    doc["status"]="done"
-    uuid=fens.update({"_id":doc["_id"]},doc)
-    print(time.time()-start)
 
-print(result)
-engine1.quit()
+logging.basicConfig(stream=sys.stdout)
+logger = logging.getLogger("chess-worker")
+
+def main():
+    redis_con = redis.Redis("redis", 6379)
+    #redis_con = redis.Redis("localhost", 6379, password=os.environ("REDISPASSWORD"))
+    mongo = pymongo.MongoClient("mongo", 27017)
+    mongo_game_db = mongo["game"]
+    fens = mongo_game_db.fens
+    queue_name = "fen_analysis"
+
+    engine1 = chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
+
+    while True:
+        uuid = redis_con.blpop(queue_name)[1].decode("utf-8")
+        logger.info("Starting work on %s", uuid)
+
+        start = time.time()
+
+        doc = fens.find_one({"_id": uuid})
+
+        if doc is None:
+            # Due to eventual consitency
+            logger.warning("Cannot find document with uuid: %s", uuid)
+            time.sleep(1) # Prevent CPU spiking
+            redis_con.rpush(queue_name, uuid)
+        else:
+            fen = doc["fen"]
+            board = chess.Board(fen=fen)
+            #update mongo saying work in progress
+            #board=chess.Board(fen=uuid)
+            #board=chess.Board(fen="r5k1/pp2n1p1/5p2/2p2r1p/1P5P/1P2P3/PB4P1/1K3B1R w - - 0 26")
+            result = engine1.analyse(board, chess.engine.Limit(depth=22))
+            logger.info("Result of analysis is: %s", result)
+            doc["result"] = str(result)
+            doc["status"] = "done"
+            uuid = fens.update({"_id": doc["_id"]}, doc)
+        logger.info("Done loop in %d seconds", time.time()-start)
+
+
+if __name__ == "__main__":
+    main()
