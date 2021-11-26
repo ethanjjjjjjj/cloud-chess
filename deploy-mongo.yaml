@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chess-mongo
+spec:
+  selector:
+    matchLabels:
+      app: chess-mongo
+  template:
+    metadata:
+      labels:
+        app: chess-mongo
+    spec:
+      containers:
+      - name: chess-mongo
+        image: eu.gcr.io/silent-relic-333216/mongo:5.0.4-focal
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 27017
+      - name: mongo-express
+        image: eu.gcr.io/silent-relic-333216/mongo-express:0.54.0
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8081

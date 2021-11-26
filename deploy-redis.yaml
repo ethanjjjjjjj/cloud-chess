@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chess-redis
+spec:
+  selector:
+    matchLabels:
+      app: chess-redis
+  template:
+    metadata:
+      labels:
+        app: chess-redis
+    spec:
+      containers:
+      - name: chess-redis
+        image: redis
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 6379
