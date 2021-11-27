@@ -9,7 +9,7 @@ import chess
 import chess.engine
 import redis
 import pymongo
-
+import multiprocessing
 logging.basicConfig(stream=sys.stdout)
 logger = logging.getLogger("chess-worker")
 
@@ -22,7 +22,7 @@ def main():
     queue_name = "fen_analysis"
 
     engine1 = chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
-
+    engine1.configure({"Threads":multiprocessing.cpu_count()})
     while True:
         uuid = redis_con.blpop(queue_name)[1].decode("utf-8")
         logger.info("Starting work on %s", uuid)
