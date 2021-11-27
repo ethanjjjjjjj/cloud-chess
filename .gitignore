@@ -2,3 +2,4 @@
 **/__pycache__/
 worker/stockfish14-bmi
 .vscode
+game-analysis-worker/stockfish14-bmi
