@@ -3,6 +3,7 @@ Flask App providing a HTTP and WS access to the backend
 """
 
 import datetime
+import json
 import uuid
 import sys
 
@@ -58,5 +59,33 @@ async def post():
 
 @app.websocket('/ws')
 async def ws():
+    """ Allows a player to play against a bot """
+    game_type = ""
     while True:
-        data = await websocket.receive()
+        data = json.loads(await websocket.receive())
+
+        if "type" not in data:
+            app.logger.warning("Recieved a msg without a type field %s", data)
+            continue
+
+        if data["type"] is "start_bot":
+            # Start bot
+            game_type = "bot"
+            pass
+        elif data["type"] is "start_multi":
+            # Start multi player
+            game_type = "multi"
+        elif data["type"] is "moved" and game_type is "bot":
+            if "fen" not in data:
+                app.logger.warning("Missing fen in ws moved type: %s", data)
+                await websocket.send(json.dumps({"type": "error", "msg": "no fen on moved type"}))
+                continue
+
+            # TODO calc move bot should make
+            # TODO calc if was best move
+            new_fen = ""
+            await websocket.send(json.dumps({"type": "moved", "fen": new_fen}))
+        elif data["type"] is "moved" and game_type is "multi":
+            # TODO send game to other player
+            # TODO calc if that was best move?
+            pass
