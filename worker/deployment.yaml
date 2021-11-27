@@ -16,5 +16,5 @@ spec:
         image: chess-worker
         resources:
           limits:
-            memory: "128Mi"
+            memory: "512Mi"
             cpu: "1000m"
