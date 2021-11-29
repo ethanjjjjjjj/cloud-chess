@@ -32,6 +32,7 @@ async def get_game():
     if game_uuid is None:
         abort(400) # Malformed request
 
+    # TOOD get the game/ check valid uuid
     game = None
 
     if game is None:
