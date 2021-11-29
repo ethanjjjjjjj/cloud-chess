@@ -22,6 +22,30 @@ mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
 
 
+@app.get("/game")
+async def get_game():
+    """
+        Allows a user to get the PGN of a game they have played
+        @usage: http://localhost/game?uuid=<uuid>
+    """
+    game_uuid = request.args.get("uuid", None)
+    if game_uuid is None:
+        abort(400) # Malformed request
+
+    game = None
+
+    if game is None:
+        abort(404) # Not found
+
+    """
+        We could return either:
+            - A redirect to the minIO download?
+            - Stream the download from a request to minIO: 
+                https://pgjones.gitlab.io/quart/how_to_guides/streaming_response.html
+    """
+    return game
+
+
 @app.route('/json-post', methods=['POST'])
 async def post():
     """
