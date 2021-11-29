@@ -4,8 +4,8 @@ Flask App providing a HTTP and WS access to the backend
 
 import datetime
 import json
+import requests
 import uuid
-import sys
 
 from quart import abort, Quart, request, websocket
 from quart_cors import cors
@@ -32,19 +32,23 @@ async def get_game():
     if game_uuid is None:
         abort(400) # Malformed request
 
-    # TOOD get the game/ check valid uuid
-    game = None
+    # TOOD get the PGN url
+    # Set to None iff uuid is invalid
+    pgn_url = None
 
-    if game is None:
+    if pgn_url is None:
         abort(404) # Not found
 
-    """
-        We could return either:
-            - A redirect to the minIO download?
-            - Stream the download from a request to minIO: 
-                https://pgjones.gitlab.io/quart/how_to_guides/streaming_response.html
-    """
-    return game
+    # Download requests in streaming mode and stream the response
+    # To reduce memory use by not needing to download the entire PGN
+    # file prior to sending it to the client
+
+    pgn_request = requests.get(pgn_url, stream=True)
+    async def pgn_stream():
+        for line in pgn_request.iter_lines():
+            yield line
+
+    return pgn_stream()
 
 
 @app.route('/json-post', methods=['POST'])
