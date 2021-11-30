@@ -4,13 +4,13 @@ Flask App providing a HTTP and WS access to the backend
 
 import datetime
 import json
-import requests
 import uuid
 
 from quart import abort, Quart, request, websocket
 from quart_cors import cors
 from pymongo import MongoClient
 import redis
+import requests
 
 
 app = Quart(__name__)
