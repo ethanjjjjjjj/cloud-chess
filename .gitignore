@@ -1,5 +1,4 @@
 .vscode/settings.json
 **/__pycache__/
-worker/stockfish14-bmi
+*/stockfish14-bmi
 .vscode
-game-analysis-worker/stockfish14-bmi
