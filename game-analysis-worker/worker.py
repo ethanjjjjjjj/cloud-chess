@@ -6,6 +6,7 @@ import redis
 import time
 import minio
 import logging
+import os
 from minio.error import S3Error
 
 s3_access_key=os.environ("S3ACCESS")
