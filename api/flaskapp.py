@@ -4,8 +4,8 @@ Flask App providing a HTTP and WS access to the backend
 
 import datetime
 import json
+import requests
 import uuid
-import sys
 
 from quart import abort, Quart, request, websocket
 from quart_cors import cors
@@ -20,6 +20,35 @@ redis_con = redis.Redis(host='redis', port=6379)
 ANALYSIS_QUEUE = "fen_analysis"
 mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
+
+
+@app.get("/game")
+async def get_game():
+    """
+        Allows a user to get the PGN of a game they have played
+        @usage: http://localhost/game?uuid=<uuid>
+    """
+    game_uuid = request.args.get("uuid", None)
+    if game_uuid is None:
+        abort(400) # Malformed request
+
+    # TOOD get the PGN url
+    # Set to None iff uuid is invalid
+    pgn_url = None
+
+    if pgn_url is None:
+        abort(404) # Not found
+
+    # Download requests in streaming mode and stream the response
+    # To reduce memory use by not needing to download the entire PGN
+    # file prior to sending it to the client
+
+    pgn_request = requests.get(pgn_url, stream=True)
+    async def pgn_stream():
+        for line in pgn_request.iter_lines():
+            yield line
+
+    return pgn_stream()
 
 
 @app.route('/json-post', methods=['POST'])
