@@ -1,16 +1,23 @@
+import logging
+import os
+import time
+import sys
+
 import chess.engine
 import chess
 import chess.pgn
 import pymongo
 import redis
-import time
 import minio
-import logging
-import os
 from minio.error import S3Error
 
-s3_access_key=os.environ("S3ACCESS")
-s3_secret_key=os.environ("S3SECRET")
+S3_ACCESS_KEY = os.environ.get("S3ACCESS", None)
+S3_SECRET_KEY = os.environ.get("S3SECRET", None)
+
+if S3_ACCESS_KEY is None or S3_SECRET_KEY is None:
+    print("S3ACCESS or S3SECRET environment variable(s) not set", file=sys.stderr)
+    sys.exit(1)
+
 
 #launch analysis engine
 engine1 = chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
@@ -20,7 +27,7 @@ mongo = pymongo.MongoClient("mongo", 27017)
 mongo_game_db = mongo["game"]
 mongo_pgns=mongo_game_db.pgns
 #connect to s3 server
-s3_conn=minio.Minio("minio:9000",access_key=s3_access_key,secret_key=s3_secret_key)
+s3_conn = minio.Minio("minio:9000", access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY)
 found = s3_conn.bucket_exists("pgns")
 while True:
     uuid=redis_con.blpop("pgn_analysis")
