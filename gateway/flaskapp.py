@@ -4,8 +4,12 @@ Flask App providing a HTTP and WS access to the backend
 
 import datetime
 import json
+import os
+import sys
 import uuid
 
+from async_timeout import timeout
+import minio
 from quart import abort, Quart, request, websocket
 from quart_cors import cors
 from pymongo import MongoClient
@@ -13,13 +17,24 @@ import redis
 import requests
 
 
+ANALYSIS_QUEUE = "fen_analysis"
+S3_HOST = os.environ.get("S3_HOST", None)
+S3_ACCESS_KEY = os.environ.get("S3_ACCESS", None)
+S3_SECRET_KEY = os.environ.get("S3_SECRET", None)
+PGN_BUCKET = "pgns"
+
+if S3_ACCESS_KEY is None or S3_SECRET_KEY is None:
+    print("S3ACCESS or S3SECRET environment variable(s) not set", file=sys.stderr)
+    sys.exit(1)
+
+
 app = Quart(__name__)
 cors(app)
 
 redis_con = redis.Redis(host='redis', port=6379)
-ANALYSIS_QUEUE = "fen_analysis"
 mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
+s3_con = minio.Minio(S3_HOST, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY)
 
 
 @app.get("/game")
@@ -32,23 +47,40 @@ async def get_game():
     if game_uuid is None:
         abort(400) # Malformed request
 
-    # TOOD get the PGN url
-    # Set to None iff uuid is invalid
-    pgn_url = None
+    # TODO @Ethan how are you storing PGNs/ getting their name?
+    object_name = game_uuid + ".pgn"
 
-    if pgn_url is None:
-        abort(404) # Not found
+    pgn_url = s3_con.presigned_get_object(PGN_BUCKET, object_name, expires=datetime.timedelta(hours=1))
 
     # Download requests in streaming mode and stream the response
     # To reduce memory use by not needing to download the entire PGN
     # file prior to sending it to the client
-
     pgn_request = requests.get(pgn_url, stream=True)
+
+    if not pgn_request.ok:
+        # Bubble up error code
+        abort(pgn_request.status_code)
+
     async def pgn_stream():
         for line in pgn_request.iter_lines():
             yield line
 
     return pgn_stream()
+
+
+@app.post('/upload_pgn')
+async def upload_game():
+    async with timeout(app.config['BODY_TIMEOUT']):
+        if not s3_con.bucket_exists(PGN_BUCKET):
+            s3_con.make_bucket(PGN_BUCKET)
+
+        # TODO @Ethan generate pgn_uuid for upload/ object name for upload
+        pgn_uuid = ""
+        object_name = pgn_uuid + ".pgn"
+
+        result = s3_con.put_object(PGN_BUCKET, object_name, await request.body, length=-1)
+
+        return { "pgn_uuid": pgn_uuid }
 
 
 @app.route('/json-post', methods=['POST'])
@@ -86,8 +118,9 @@ async def post():
     result = redis_con.blpop(fen_uuid)[1].decode("utf-8")
     return {"status": "ok", "data": result}
 
+
 @app.websocket('/ws')
-async def ws():
+async def websocket_connection():
     """ Allows a player to play against a bot """
     game_type = ""
     while True:
