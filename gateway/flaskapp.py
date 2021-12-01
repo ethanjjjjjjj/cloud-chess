@@ -1,5 +1,5 @@
 """
-Flask App providing a HTTP and WS access to the backend
+Quart App providing a HTTP and WS access to the backend
 """
 
 import datetime
@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import uuid
+from typing import Optional
 
 from async_timeout import timeout
 import minio
@@ -31,6 +32,7 @@ if S3_ACCESS_KEY is None or S3_SECRET_KEY is None:
 
 app = Quart(__name__)
 cors(app)
+
 
 redis_con = redis.Redis(host='redis', port=6379)
 mongo_client = MongoClient('mongo', 27017)
@@ -72,17 +74,16 @@ async def get_game():
 
 @app.post('/upload_pgn')
 async def upload_game():
-    async with timeout(app.config['BODY_TIMEOUT']):
-        if not s3_con.bucket_exists(PGN_BUCKET):
-            s3_con.make_bucket(PGN_BUCKET)
+    if not s3_con.bucket_exists(PGN_BUCKET):
+        s3_con.make_bucket(PGN_BUCKET)
 
-        # TODO @Ethan generate pgn_uuid for upload/ object name for upload
-        pgn_uuid = ""
-        object_name = pgn_uuid + ".pgn"
+    # TODO @Ethan generate pgn_uuid for upload/ object name for upload
+    pgn_uuid = ""
+    object_name = pgn_uuid + ".pgn"
 
-        result = s3_con.put_object(PGN_BUCKET, object_name, await request.body, length=-1)
+    result = s3_con.put_object(PGN_BUCKET, object_name, await request.body, length=-1)
 
-        return { "pgn_uuid": pgn_uuid }
+    return { "pgn_uuid": pgn_uuid }
 
 
 @app.route('/json-post', methods=['POST'])
@@ -121,40 +122,32 @@ async def post():
     return {"status": "ok", "data": result}
 
 
-@app.websocket('/ws')
-async def websocket_connection():
+@app.websocket('/ws/bot')
+async def bot_game():
     """ Allows a player to play against a bot """
-    game_type = ""
+    game_uuid = str(uuid.uuid4())
+    
+    await websocket.send(json.dumps({"type": "init", "game_uuid": game_uuid}))
+
     while True:
         data = json.loads(await websocket.receive())
 
-        if "type" not in data:
-            app.logger.warning("Recieved a msg without a type field %s", data)
+        if data.get("type", None) == "player_move":
+            app.logger.warning("Got invalid type in /ws/bot: %s", data)
+            await websocket.send(json.dumps({"type": "error", "msg": "Invalid message type"}))
             continue
 
-        if data["type"] is "start_bot":
-            # Start bot
-            game_type = "bot"
-            game_uuid=str(uuid.uuid4())
-            #initialise game by putting starting position into database
-            #TODO implement storing partial pgn here while game is in play, and update with object id after fen stored as a file
-            mongo_livegames.insert_one({"_id":game_uuid,"moves":[],"fen":str(chess.STARTING_FEN),"status":"pending"})
-            #while true pop from queue named (gameuuid)_botmove, push player move to queue (gameuuid)_playermove, if return {"move":"",state=(draw or win)} then end connection else push next player move
-            
-        elif data["type"] is "start_multi":
-            # Start multi player
-            game_type = "multi"
-        elif data["type"] is "moved" and game_type is "bot":
-            if "fen" not in data:
-                app.logger.warning("Missing fen in ws moved type: %s", data)
-                await websocket.send(json.dumps({"type": "error", "msg": "no fen on moved type"}))
-                continue
+        if "move" not in data:
+            app.logger.warning("Missing fen in ws moved type: %s", data)
+            await websocket.send(json.dumps({"type": "error", "msg": "no fen on moved type"}))
+            continue
 
-            # TODO calc move bot should make
-            # TODO calc if was best move
-            new_fen = ""
-            await websocket.send(json.dumps({"type": "moved", "fen": new_fen}))
-        elif data["type"] is "moved" and game_type is "multi":
-            # TODO send game to other player
-            # TODO calc if that was best move?
-            pass
+        move = data["move"]
+        # TODO calc move bot should make
+        # TODO calc if was best move
+        game_over = False
+        bot_move: Optional[str] = None
+        if game_over:
+            await websocket.send(json.dumps({"type": "end_game", "winner": "-", "bot_move": bot_move}))
+        else:
+            await websocket.send(json.dumps({"type": "bot_move", "bot_move": bot_move}))
