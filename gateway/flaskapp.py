@@ -31,6 +31,7 @@ if S3_ACCESS_KEY is None or S3_SECRET_KEY is None:
 app = Quart(__name__)
 cors(app)
 
+
 redis_con = redis.Redis(host='redis', port=6379)
 mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
@@ -130,14 +131,14 @@ async def websocket_connection():
             app.logger.warning("Recieved a msg without a type field %s", data)
             continue
 
-        if data["type"] is "start_bot":
+        if data["type"] == "start_bot":
             # Start bot
             game_type = "bot"
             pass
-        elif data["type"] is "start_multi":
+        elif data["type"] == "start_multi":
             # Start multi player
             game_type = "multi"
-        elif data["type"] is "moved" and game_type is "bot":
+        elif data["type"] == "moved" and game_type == "bot":
             if "fen" not in data:
                 app.logger.warning("Missing fen in ws moved type: %s", data)
                 await websocket.send(json.dumps({"type": "error", "msg": "no fen on moved type"}))
@@ -147,7 +148,7 @@ async def websocket_connection():
             # TODO calc if was best move
             new_fen = ""
             await websocket.send(json.dumps({"type": "moved", "fen": new_fen}))
-        elif data["type"] is "moved" and game_type is "multi":
+        elif data["type"] == "moved" and game_type == "multi":
             # TODO send game to other player
             # TODO calc if that was best move?
             pass
