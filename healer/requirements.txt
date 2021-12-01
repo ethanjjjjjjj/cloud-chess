@@ -1,2 +1,5 @@
 redis==4.0.2
 pymongo==3.12.1
+grpcio==1.42.0
+opencensus-ext-stackdriver==0.8.0
+opencensus==0.8.0

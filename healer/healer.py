@@ -10,6 +10,17 @@ import uuid
 import redis
 from pymongo import MongoClient
 
+from opencensus.ext.stackdriver import stats_exporter
+from opencensus.stats import aggregation, measure, stats, view
+
+HEALED_COUNT = measure.MeasureInt("healed_items", "Counter of healed items per second", "second")
+HEALED_VIEW = view.View("healed_items_distribution",
+                        "The distirbution of healed items",
+                        [],
+                        HEALED_COUNT,
+                        aggregation.SumAggregation())
+
+
 r = redis.Redis(host="redis", port=6379)
 DB_NAME = "work"  # database name
 client = MongoClient("mongo", 27017)
@@ -124,27 +135,39 @@ def old_loop():
     print("Loop finished; Time Elapsed = ", datetime.datetime.utcnow() - starttime)
 
 
-while True:
-    thirtysecs = datetime.datetime.utcnow() - datetime.timedelta(
-        seconds=30
-    )  # Store the time 30 seconds ago in a variable to be used for checking
-    query = db.fens.find(
-        {"lastqueued": {"$lt": thirtysecs}, "status": "processing"}
-    )  # Query the database to find items older than 30 seconds old and with a status of "processing" (i.e. they started getting processing but did not complete within 30 sceonds, something likely crashed)
-    for item in query:  # for each of these items
-        item[
-            "lastqueued"
-        ] = (
-            datetime.datetime.utcnow()
-        )  # update the "lastqueued" tag to the current time
-        item["status"] = "pending"
+if __name__ == "__main__":
+    stats.stats.view_manager.register_view(HEALED_VIEW)
+    exporter = stats_exporter.new_stats_exporter()
+    print(f"Exporting stats to project {exporter.options.project_id}")
 
-        uuid = db.fens.update(
-            {"_id": item["_id"]}, item
-        )  # update that item in the mongodb database
-        r.rpush(DB_NAME, item["_id"])  # push the uuid to the queue
-        print("Updated item:", item)  # print confirmation
-    time.sleep(5)  # run this loop every 5 seconds
-    print(
-        "Loop finished; Time Elapsed =", datetime.datetime.utcnow() - starttime
-    )  # print time elapsed for keeping track
+    stats.stats.view_manager.register_exporter(exporter)
+
+    while True:
+        # Store the time 30 seconds ago in a variable to be used for checking
+        thirtysecs = datetime.datetime.utcnow() - datetime.timedelta(seconds=30)
+
+        # Query the database to find items older than 30 seconds old and with a status of "processing"
+        # (i.e. they started getting processing but did not complete within 30 sceonds, something likely crashed)
+        query = db.fens.find({"lastqueued": {"$lt": thirtysecs}, "status": "processing"})
+
+        num_requeued = 0
+        for item in query:
+            # update the "lastqueued" tag to the current time
+            item["lastqueued"] = (datetime.datetime.utcnow())
+            item["status"] = "pending"
+
+            # update that item in the mongodb database
+            uuid = db.fens.update({"_id": item["_id"]}, item)
+
+            # push the uuid to the queue
+            r.rpush(DB_NAME, item["_id"])
+            num_requeued += 1
+            print("Updated item:", item)
+
+        # Record number of items pushed in cloud metrics
+        mmap = stats.stats.stats_recorder.new_measurement_map()
+        mmap.measure_int_put(HEALED_COUNT, num_requeued)
+        mmap.record()
+
+        time.sleep(5)  # run this loop every 5 seconds
+        print("Loop finished; Time Elapsed =", datetime.datetime.utcnow() - starttime)
