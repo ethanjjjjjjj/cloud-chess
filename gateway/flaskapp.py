@@ -7,6 +7,7 @@ import json
 import os
 import sys
 import uuid
+from typing import Optional
 
 from async_timeout import timeout
 import minio
@@ -119,35 +120,32 @@ async def post():
     return {"status": "ok", "data": result}
 
 
-@app.websocket('/ws')
-async def websocket_connection():
+@app.websocket('/ws/bot')
+async def bot_game():
     """ Allows a player to play against a bot """
-    game_type = ""
+    game_uuid = str(uuid.uuid4())
+
+    await websocket.send(json.dumps({"type": "init", "game_uuid": game_uuid}))
+
     while True:
         data = json.loads(await websocket.receive())
 
-        if "type" not in data:
-            app.logger.warning("Recieved a msg without a type field %s", data)
+        if data.get("type", None) == "player_move":
+            app.logger.warning("Got invalid type in /ws/bot: %s", data)
+            await websocket.send(json.dumps({"type": "error", "msg": "Invalid message type"}))
             continue
 
-        if data["type"] == "start_bot":
-            # Start bot
-            game_type = "bot"
-            pass
-        elif data["type"] == "start_multi":
-            # Start multi player
-            game_type = "multi"
-        elif data["type"] == "moved" and game_type == "bot":
-            if "fen" not in data:
-                app.logger.warning("Missing fen in ws moved type: %s", data)
-                await websocket.send(json.dumps({"type": "error", "msg": "no fen on moved type"}))
-                continue
+        if "move" not in data:
+            app.logger.warning("Missing fen in ws moved type: %s", data)
+            await websocket.send(json.dumps({"type": "error", "msg": "no fen on moved type"}))
+            continue
 
-            # TODO calc move bot should make
-            # TODO calc if was best move
-            new_fen = ""
-            await websocket.send(json.dumps({"type": "moved", "fen": new_fen}))
-        elif data["type"] == "moved" and game_type == "multi":
-            # TODO send game to other player
-            # TODO calc if that was best move?
-            pass
+        move = data["move"]
+        # TODO calc move bot should make
+        # TODO calc if was best move
+        game_over = False
+        bot_move: Optional[str] = None
+        if game_over:
+            await websocket.send(json.dumps({"type": "end_game", "winner": "-", "bot_move": bot_move}))
+        else:
+            await websocket.send(json.dumps({"type": "bot_move", "bot_move": bot_move}))
