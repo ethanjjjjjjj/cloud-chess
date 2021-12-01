@@ -15,6 +15,7 @@ from quart_cors import cors
 from pymongo import MongoClient
 import redis
 import requests
+import chess
 
 
 ANALYSIS_QUEUE = "fen_analysis"
@@ -34,6 +35,7 @@ cors(app)
 redis_con = redis.Redis(host='redis', port=6379)
 mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
+mongo_livegames=game_db.livegames
 s3_con = minio.Minio(S3_HOST, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY)
 
 
@@ -133,7 +135,12 @@ async def websocket_connection():
         if data["type"] is "start_bot":
             # Start bot
             game_type = "bot"
-            pass
+            game_uuid=str(uuid.uuid4())
+            #initialise game by putting starting position into database
+            #TODO implement storing partial pgn here while game is in play, and update with object id after fen stored as a file
+            mongo_livegames.insert_one({"_id":game_uuid,"moves":[],"fen":str(chess.STARTING_FEN),"status":"pending"})
+            #while true pop from queue named (gameuuid)_botmove, push player move to queue (gameuuid)_playermove, if return {"move":"",state=(draw or win)} then end connection else push next player move
+            
         elif data["type"] is "start_multi":
             # Start multi player
             game_type = "multi"
