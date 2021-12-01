@@ -1,5 +1,5 @@
 """
-Flask App providing a HTTP and WS access to the backend
+Quart App providing a HTTP and WS access to the backend
 """
 
 import datetime
@@ -71,17 +71,16 @@ async def get_game():
 
 @app.post('/upload_pgn')
 async def upload_game():
-    async with timeout(app.config['BODY_TIMEOUT']):
-        if not s3_con.bucket_exists(PGN_BUCKET):
-            s3_con.make_bucket(PGN_BUCKET)
+    if not s3_con.bucket_exists(PGN_BUCKET):
+        s3_con.make_bucket(PGN_BUCKET)
 
-        # TODO @Ethan generate pgn_uuid for upload/ object name for upload
-        pgn_uuid = ""
-        object_name = pgn_uuid + ".pgn"
+    # TODO @Ethan generate pgn_uuid for upload/ object name for upload
+    pgn_uuid = ""
+    object_name = pgn_uuid + ".pgn"
 
-        result = s3_con.put_object(PGN_BUCKET, object_name, await request.body, length=-1)
+    result = s3_con.put_object(PGN_BUCKET, object_name, await request.body, length=-1)
 
-        return { "pgn_uuid": pgn_uuid }
+    return { "pgn_uuid": pgn_uuid }
 
 
 @app.route('/json-post', methods=['POST'])
