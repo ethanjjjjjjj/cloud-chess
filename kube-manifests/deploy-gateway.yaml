@@ -15,6 +15,22 @@ spec:
       - name: gateway
         image: eu.gcr.io/silent-relic-333216/gateway
         imagePullPolicy: Always
+        env:
+        - name: S3_HOST
+          valueFrom:
+              secretKeyRef:
+                name: s3details
+                key: S3_HOST
+        - name: S3_ACCESS
+          valueFrom:
+            secretKeyRef:
+              name: minio
+              key: root-user
+        - name: S3_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: root-password
+              name: minio
         resources:
           limits:
             memory: "256Mi"
