@@ -13,7 +13,8 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: eu.gcr.io/silent-relic-333216/gateway:latest
+        image: eu.gcr.io/silent-relic-333216/gateway
+        imagePullPolicy: Always
         resources:
           limits:
             memory: "256Mi"

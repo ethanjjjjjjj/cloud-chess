@@ -13,7 +13,8 @@ spec:
     spec:
       containers:
       - name: healer
-        image: eu.gcr.io/silent-relic-333216/healer:latest
+        image: eu.gcr.io/silent-relic-333216/healer
+        imagePullPolicy: Always
         resources:
           limits:
             memory: "512Mi"
