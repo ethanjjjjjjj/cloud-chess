@@ -1,0 +1,4 @@
+redis==4.0.2
+pymongo==3.12.1
+chess==1.7.0
+minio==7.1.2

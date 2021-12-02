@@ -3,7 +3,6 @@ import chess.pgn
 import pymongo
 import redis
 import logging
-import minio
 import chess
 import multiprocessing
 import json
