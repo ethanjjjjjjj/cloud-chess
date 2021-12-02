@@ -130,7 +130,7 @@ async def bot_game():
     #TODO implement storing partial pgn here while game is in play, and update with object id after fen stored as a file
     mongo_livegames.insert_one({"_id":game_uuid,"moves":[],"fen":str(chess.STARTING_FEN),"status":"pending"})
     #while true pop from queue named (gameuuid)_botmove, push player move to queue (gameuuid)_playermove, if return {"move":"",state=(draw or win)} then end connection else push next player move
-            
+    #if game is won on bot's turn, move is still sent back but client needs to know game is over
     await websocket.send(json.dumps({"type": "init", "game_uuid": game_uuid}))
 
     while True:
@@ -147,11 +147,24 @@ async def bot_game():
             continue
 
         move = data["move"]
-        # TODO calc move bot should make
-        # TODO calc if was best move
+        #push gameuuid to livegames queue to signify that there has been an update, this allows any bot to calculate the next move so the game does not have to tie up one bot forever
+        redis_con.rpush("livegames",json.dumps({"gameid":game_uuid,"move":move}))
+        # get bot move back in form {"move":"","state":""} where state is the termination reason or ongoing, if ongoing then websocket connection can close after sending response back to the client.
+        botmovejson=json.loads(str(redis_con.blpop(game_uuid)))
+        
         game_over = False
         bot_move: Optional[str] = None
+        if botmovejson["state"]!="ongoing":
+            game_over=True
+            if botmovejson["move"]!="":  #if game finished on bot's move
+                bot_move=botmovejson["move"]
+            else:
+                #game finished with player's move not bot's move
+                pass
+        elif botmovejson["state"]=="ongoing":
+            bot_move=botmovejson["move"]
+        
         if game_over:
-            await websocket.send(json.dumps({"type": "end_game", "winner": "-", "bot_move": bot_move}))
+            await websocket.send(json.dumps({"type": "end_game", "state": botmovejson["state"], "bot_move": bot_move}))
         else:
             await websocket.send(json.dumps({"type": "bot_move", "bot_move": bot_move}))
