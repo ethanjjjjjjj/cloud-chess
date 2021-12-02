@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: healer
-        image: healer
+        image: eu.gcr.io/silent-relic-333216/healer:latest
         resources:
           limits:
             memory: "512Mi"
