@@ -14,22 +14,25 @@ mongo_game_db = mongo["game"]
 mongo_livegames=mongo_game_db.livegames
 engine1 = chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
 engine1.configure({"Threads":multiprocessing.cpu_count()})
+
+
 while True:
-    #game is in livegames queue if it has an update from the client, uuid should be pushed by the gateway
-    gameuuid=str(redis_con.blpop("livegames"))
+    #game is in livegames queue if it has an update from the client, uuid and move should be pushed by the gateway
+    gamejson=json.loads(str(redis_con.blpop("livegames")))
+    gameuuid=gamejson["gameid"]
+    playermove=gamejson["move"]
     #game is looked up in the database to make sure it's not finished already
     document=mongo_livegames.find_one({"_id":gameuuid})
-    popqueue=gameuuid+"_playermove"
+    #varaible for the queue to push moves to
     pushqueue=gameuuid+"_botmove"
     gametype=document["type"]
+    #if the game is not over
     if document["status"]=="pending":
         print("game found")
         if gametype=="bot":
             print("game type bot")
             #get last board position
             fen=document["fen"]
-            #get player move
-            playermove=redis_con.blpop(gameuuid)
             #apply player move
             board=chess.Board(fen=fen)
             board.push(chess.Move.from_uci(playermove))
