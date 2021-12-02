@@ -1,19 +1,19 @@
 Version: apps/v1
 kind: Deployment
 metadata:
-  name: chess-worker
+  name: game-worker
 spec:
   selector:
     matchLabels:
-      app: chess-worker
+      app: game-worker
   template:
     metadata:
       labels:
-        app: chess-worker
+        app: game-worker
     spec:
       containers:
       - name: 
-        image: chess-worker
+        image: game-worker
         resources:
           limits:
             memory: "512Mi"

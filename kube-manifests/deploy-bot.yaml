@@ -1,0 +1,20 @@
+Version: apps/v1
+kind: Deployment
+metadata:
+  name: bot-worker
+spec:
+  selector:
+    matchLabels:
+      app: bot-worker
+  template:
+    metadata:
+      labels:
+        app: bot-worker
+    spec:
+      containers:
+      - name: 
+        image: bot-worker
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "300m"

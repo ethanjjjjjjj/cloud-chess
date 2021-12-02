@@ -1,0 +1,20 @@
+Version: apps/v1
+kind: Deployment
+metadata:
+  name: fen-worker
+spec:
+  selector:
+    matchLabels:
+      app: fen-worker
+  template:
+    metadata:
+      labels:
+        app: fen-worker
+    spec:
+      containers:
+      - name: 
+        image: fen-worker
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"

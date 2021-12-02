@@ -1,0 +1,20 @@
+Version: apps/v1
+kind: Deployment
+metadata:
+  name: healer
+spec:
+  selector:
+    matchLabels:
+      app: healer
+  template:
+    metadata:
+      labels:
+        app: healer
+    spec:
+      containers:
+      - name: 
+        image: healer
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "300m"
