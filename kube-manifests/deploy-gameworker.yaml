@@ -1,4 +1,4 @@
-Version: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: game-worker
@@ -12,7 +12,7 @@ spec:
         app: game-worker
     spec:
       containers:
-      - name: 
+      - name: game-worker
         image: game-worker
         resources:
           limits:

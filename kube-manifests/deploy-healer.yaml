@@ -1,4 +1,4 @@
-Version: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: healer
@@ -12,7 +12,7 @@ spec:
         app: healer
     spec:
       containers:
-      - name: 
+      - name: healer
         image: healer
         resources:
           limits:

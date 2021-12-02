@@ -1,4 +1,4 @@
-Version: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bot-worker
@@ -12,7 +12,7 @@ spec:
         app: bot-worker
     spec:
       containers:
-      - name: 
+      - name: bot-worker
         image: bot-worker
         resources:
           limits:

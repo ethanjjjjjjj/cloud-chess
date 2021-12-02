@@ -8,7 +8,7 @@
 ## @param global.storageClass Global StorageClass for Persistent Volume(s)
 ##
 global:
-  imageRegistry: ""
+  imageRegistry: "eu.gcr.io"
   ## e.g.
   ## imagePullSecrets:
   ##   - myRegistryKeySecretName
@@ -52,9 +52,9 @@ extraDeploy: []
 ## @param image.debug Specify if debug logs should be enabled
 ##
 image:
-  registry: docker.io
-  repository: bitnami/minio
-  tag: 2021.11.9-debian-10-r0
+  registry: eu.gcr.io
+  repository: silent-relic-333216/minio
+  tag: 2021.11.9
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: https://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -78,13 +78,13 @@ image:
 ## @param clientImage.tag MinIO&reg; Client image tag (immutable tags are recommended)
 ##
 clientImage:
-  registry: eu.gcr.io
-  repository: silent-relic-333216/minio
-  tag: 2021.11.9
+  registry: docker.io
+  repository: bitnami/minio-client
+  tag: 2021.11.5-debian-10-r3
 ## @param mode MinIO&reg; server mode (`standalone` or `distributed`)
 ## ref: https://docs.minio.io/docs/distributed-minio-quickstart-guide
 ##
-mode: distributed
+mode: standalone
 ## MinIO&reg; authentication parameters
 ##
 auth:

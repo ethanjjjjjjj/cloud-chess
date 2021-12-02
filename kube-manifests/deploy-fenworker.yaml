@@ -1,4 +1,4 @@
-Version: apps/v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: fen-worker
@@ -12,7 +12,7 @@ spec:
         app: fen-worker
     spec:
       containers:
-      - name: 
+      - name: fen-worker
         image: fen-worker
         resources:
           limits:
