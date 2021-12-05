@@ -25,7 +25,7 @@ S3_ACCESS_KEY = os.environ.get("S3_ACCESS", None)
 S3_SECRET_KEY = os.environ.get("S3_SECRET", None)
 PGN_BUCKET = "pgns"
 
-if S3_ACCESS_KEY is None or S3_SECRET_KEY is None:
+if (S3_ACCESS_KEY == None) or (S3_SECRET_KEY == None):
     print("S3ACCESS or S3SECRET environment variable(s) not set", file=sys.stderr)
     sys.exit(1)
 
@@ -48,7 +48,7 @@ async def get_game():
         @usage: http://localhost/game?uuid=<uuid>
     """
     game_uuid = request.args.get("uuid", None)
-    if game_uuid is None:
+    if game_uuid == None:
         abort(400) # Malformed request
 
     # TODO @Ethan how are you storing PGNs/ getting their name?
@@ -97,7 +97,7 @@ async def post():
     """
     request_data = await request.get_json() # get json
 
-    if request_data is None:
+    if request_data == None:
         app.logger.warning("Recieved an invalid request to /json-post")
         abort(400)
 
