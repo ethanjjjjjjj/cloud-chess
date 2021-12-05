@@ -1,10 +1,15 @@
-# every few seconds run a mongo query for everything that is pending
-# read in everything that is pending and time created was longer than 30 seconds ago
-# push it to the redis queue and update the time (new id) ((?))
-# r5k1/pp2n1p1/5p2/2p2r1p/1P5P/1P2P3/PB4P1/1K3B1R w - - 0 26
+"""
+The healer is responsible for intoducing fault tolorance for the:
+    - Worker nodes
+    - The Redis Queue
+    - The Redis Pub/Sub
+This will re-queue/ re-publish any items which are deamed to of
+gotten 'stuck' proceeding through the pipeline due to some fault
+which could result from a crashed component or network error
+"""
+# Example FEN: r5k1/pp2n1p1/5p2/2p2r1p/1P5P/1P2P3/PB4P1/1K3B1R w - - 0 26
 
 import datetime
-import json
 import time
 import uuid
 import redis
@@ -21,8 +26,8 @@ HEALED_VIEW = view.View("healed_items_distribution",
                         aggregation.SumAggregation())
 
 
-r = redis.Redis(host="redis", port=6379)
-DB_NAME = "work"  # database name
+redis_con = redis.Redis(host="redis", port=6379)
+ANALYSIS_QUEUE = "fen_analysis"
 client = MongoClient("mongo", 27017)
 db = client["game"]
 
@@ -37,7 +42,7 @@ def create_dummy_entry():
         "lastqueued": datetime.datetime.utcnow(),
     }
     db.fens.insert_one(fen)
-    r.rpush(DB_NAME, UUID)
+    redis_con.rpush(ANALYSIS_QUEUE, UUID)
 
 
 def create_dummy_entry_done():
@@ -50,7 +55,7 @@ def create_dummy_entry_done():
         "lastqueued": datetime.datetime.utcnow() - datetime.timedelta(seconds=60),
     }
     db.fens.insert_one(fen)
-    r.rpush(DB_NAME, UUID)
+    redis_con.rpush(ANALYSIS_QUEUE, UUID)
 
 
 def create_dummy_entry_processing():
@@ -63,7 +68,7 @@ def create_dummy_entry_processing():
         "lastqueued": datetime.datetime.utcnow() - datetime.timedelta(seconds=60),
     }
     db.fens.insert_one(fen)
-    r.rpush(DB_NAME, UUID)
+    redis_con.rpush(ANALYSIS_QUEUE, UUID)
 
 
 """
@@ -101,13 +106,13 @@ db.collectionname.find({
 # however searching a queue seems to be a pain, so this is (currently) not used any longer
 # https://stackoverflow.com/questions/10882713/redis-list-pop-without-removing <- this has a command that can be used to search a queue without popping items
 def search_queue(uuid):
-    if r.llen("work") == 0:
+    if redis_con.llen("work") == 0:
         return False
     inQueue = False
-    r.copy(DB_NAME, "new_queue")
+    redis_con.copy(ANALYSIS_QUEUE, "new_queue")
     # items = r.lrange(DB, 0, r.llen("work")-1) # This command will return a list of items in the queue between the start point and the end point, but does this without popping
-    while r.llen("work") > 0:
-        uuid_ = r.blpop("new_queue")[1].decode("utf-8")
+    while redis_con.llen("work") > 0:
+        uuid_ = redis_con.blpop("new_queue")[1].decode("utf-8")
         if uuid == uuid_:
             return True
 
@@ -125,9 +130,9 @@ def old_loop():
         item["lastqueued"] = datetime.datetime.utcnow()
 
         if not search_queue(item["_id"]):
-            uuid = db.fens.update({"_id": item["_id"]}, item)
+            db.fens.update({"_id": item["_id"]}, item)
             # push to queue
-            r.rpush(DB_NAME, item["_id"])
+            redis_con.rpush(ANALYSIS_QUEUE, item["_id"])
             print("Updated item:", item)
         else:
             print("Passed item because it was still in the queue:", item)
@@ -135,38 +140,81 @@ def old_loop():
     print("Loop finished; Time Elapsed = ", datetime.datetime.utcnow() - starttime)
 
 
+def fix_work_queue() -> int:
+    """
+    Finds all the items in the database which have status `pending`
+    and older than 30 seconds
+
+    Returns the number of items fixed
+    """
+    # Store the time 30 seconds ago in a variable to be used for checking
+    critical_time = datetime.datetime.utcnow() - datetime.timedelta(seconds=30)
+
+    # Query the database to find items older than 30 seconds old and with a status of "processing"
+    # (i.e. they started getting processing but did not complete within 30 sceonds,
+    #  something, either Redis or a worker, likely crashed)
+    query = db.fens.find({"lastqueued": {"$lt": critical_time}, "status": "processing"})
+
+    num_healed = 0
+    for item in query:
+        # update the "lastqueued" tag to the current time
+        item["lastqueued"] = (datetime.datetime.utcnow())
+        item["status"] = "pending"
+
+        # update that item in the mongodb database
+        db.fens.update({"_id": item["_id"]}, item)
+
+        # push the uuid to the queue
+        redis_con.rpush(ANALYSIS_QUEUE, item["_id"])
+        num_healed += 1
+        print("Requeued item:", item)
+
+    return num_healed
+
+
+def fix_done_pub_sub() -> int:
+    """
+    Finds all the items in the database which have status `done`
+    and completed more than 30 seconds ago
+
+    Returns the number of items fixed
+    """
+    # Store the time 1.5 minutes ago in a variable to be used for checking
+    critical_time = datetime.datetime.utcnow() - datetime.timedelta(minutes=1, seconds=30)
+
+    # Query the database to find items older than 30 seconds old and with a status of "done"
+    # (i.e. the work was done but the request was not returned from the gateway
+    # as something (Redis, probably) likely crashed)
+    query = db.fens.find({"lastqueued": {"$lt": critical_time}, "status": "done"})
+
+    num_healed = 0
+    for item in query:
+        # update the "lastqueued" tag to the current time
+        item["lastqueued"] = (datetime.datetime.utcnow())
+
+        # update that item in the mongodb database
+        uuid = db.fens.update({"_id": item["_id"]}, item)
+
+        # push the uuid to the queue
+        redis_con.rpush(uuid, item["_id"])
+        num_healed += 1
+        print("Updated item:", item)
+
+    return num_healed
+
+
 if __name__ == "__main__":
     stats.stats.view_manager.register_view(HEALED_VIEW)
     exporter = stats_exporter.new_stats_exporter()
     print(f"Exporting stats to project {exporter.options.project_id}")
-
     stats.stats.view_manager.register_exporter(exporter)
 
     while True:
-        # Store the time 30 seconds ago in a variable to be used for checking
-        thirtysecs = datetime.datetime.utcnow() - datetime.timedelta(seconds=30)
-
-        # Query the database to find items older than 30 seconds old and with a status of "processing"
-        # (i.e. they started getting processing but did not complete within 30 sceonds, something likely crashed)
-        query = db.fens.find({"lastqueued": {"$lt": thirtysecs}, "status": "processing"})
-
-        num_requeued = 0
-        for item in query:
-            # update the "lastqueued" tag to the current time
-            item["lastqueued"] = (datetime.datetime.utcnow())
-            item["status"] = "pending"
-
-            # update that item in the mongodb database
-            uuid = db.fens.update({"_id": item["_id"]}, item)
-
-            # push the uuid to the queue
-            r.rpush(DB_NAME, item["_id"])
-            num_requeued += 1
-            print("Updated item:", item)
+        total_queue_fixed = fix_work_queue()
 
         # Record number of items pushed in cloud metrics
         mmap = stats.stats.stats_recorder.new_measurement_map()
-        mmap.measure_int_put(HEALED_COUNT, num_requeued)
+        mmap.measure_int_put(HEALED_COUNT, total_queue_fixed)
         mmap.record()
 
         time.sleep(5)  # run this loop every 5 seconds

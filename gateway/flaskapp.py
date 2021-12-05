@@ -37,7 +37,7 @@ cors(app)
 redis_con = redis.Redis(host='redis', port=6379)
 mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
-mongo_livegames=game_db.livegames
+mongo_livegames = game_db.livegames
 s3_con = minio.Minio(S3_HOST, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY)
 
 
@@ -86,7 +86,7 @@ async def upload_game():
     return { "pgn_uuid": pgn_uuid }
 
 
-@app.route('/json-post', methods=['POST'])
+@app.route('/fen', methods=['POST'])
 async def post():
     """
     - send a json to the backend
@@ -115,10 +115,19 @@ async def post():
     # The time the item was queued is stored, which can be queried against as it is in the format MongoDB expects
     fen_item = {"_id": fen_uuid, "fen": fen, "status": "pending", "lastqueued": queuetime}
 
-    game_db.fens.insert_one(fen_item) # post the item into the database
-    redis_con.rpush(ANALYSIS_QUEUE, fen_uuid) # push the item into the redis queue
+    # Post the item into the database
+    game_db.fens.insert_one(fen_item)
 
+    # Push the item into the redis queue
+    redis_con.rpush(ANALYSIS_QUEUE, fen_uuid)
+
+    # Wait for result from Pub/Sub
     result = redis_con.blpop(fen_uuid)[1].decode("utf-8")
+
+    # Update database that item has been recieve
+    # So that healer knows if it was lost from pub/sub failing or not
+    game_db.fens.update_one({"_id": fen_uuid},  {"$set": {"status": "recieved"}}, True)
+
     return {"status": "ok", "data": result}
 
 
@@ -151,7 +160,7 @@ async def bot_game():
         redis_con.rpush("livegames",json.dumps({"gameid":game_uuid,"move":move}))
         # get bot move back in form {"move":"","state":""} where state is the termination reason or ongoing, if ongoing then websocket connection can close after sending response back to the client.
         botmovejson=json.loads(str(redis_con.blpop(game_uuid)))
-        
+
         game_over = False
         bot_move: Optional[str] = None
         if botmovejson["state"]!="ongoing":
@@ -163,7 +172,7 @@ async def bot_game():
                 pass
         elif botmovejson["state"]=="ongoing":
             bot_move=botmovejson["move"]
-        
+
         if game_over:
             await websocket.send(json.dumps({"type": "end_game", "state": botmovejson["state"], "bot_move": bot_move}))
         else:
