@@ -5,13 +5,9 @@ from dataclasses import dataclass
 from typing import List, Optional
 import random
 import time
-import logging
 import requests
 import chess.pgn
 import typer
-
-logging.basicConfig(filename="client-simulator.log", filemode="w")
-log = logging.getLogger("Client")
 
 @dataclass
 class AppOptions:
@@ -80,8 +76,8 @@ def const_rate(rate: int = typer.Argument(..., help="Rate at which to submit che
             time.sleep((expected_ellapse - ellapsed_time).total_seconds())
             current_time = datetime.now()
         elif ellapsed_time > expected_ellapse:
-            log.warning("Cant keep up took %s when should of taken %s",
-                        ellapsed_time, expected_ellapse)
+            typer.echo("[WARNING] Cant keep up took %s when should of taken %s"
+                       .format(ellapsed_time, expected_ellapse))
             current_time = new_time
         else:
             current_time = new_time
