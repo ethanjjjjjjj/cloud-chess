@@ -131,16 +131,17 @@ async def post():
     return {"status": "ok", "data": result}
 
 
-@app.websocket('/ws/bot')
-async def bot_game():
+@app.websocket('/ws/bot/<game_uuid>')
+async def bot_game(game_uuid = None):
     """ Allows a player to play against a bot """
-    game_uuid = str(uuid.uuid4())
-    #initialise game by putting starting position into database
-    #TODO implement storing partial pgn here while game is in play, and update with object id after fen stored as a file
-    mongo_livegames.insert_one({"_id":game_uuid,"moves":[],"fen":str(chess.STARTING_FEN),"status":"pending"})
-    #while true pop from queue named (gameuuid)_botmove, push player move to queue (gameuuid)_playermove, if return {"move":"",state=(draw or win)} then end connection else push next player move
-    #if game is won on bot's turn, move is still sent back but client needs to know game is over
-    await websocket.send(json.dumps({"type": "init", "game_uuid": game_uuid}))
+    if game_uuid is None:
+        game_uuid = str(uuid.uuid4())
+        #initialise game by putting starting position into database
+        #TODO implement storing partial pgn here while game is in play, and update with object id after fen stored as a file
+        mongo_livegames.insert_one({"_id":game_uuid,"moves":[],"fen":str(chess.STARTING_FEN),"status":"pending"})
+        #while true pop from queue named (gameuuid)_botmove, push player move to queue (gameuuid)_playermove, if return {"move":"",state=(draw or win)} then end connection else push next player move
+        #if game is won on bot's turn, move is still sent back but client needs to know game is over
+        await websocket.send(json.dumps({"type": "init", "game_uuid": game_uuid}))
 
     while True:
         data = json.loads(await websocket.receive())
