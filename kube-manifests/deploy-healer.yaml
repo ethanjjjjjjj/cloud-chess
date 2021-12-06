@@ -23,7 +23,7 @@ spec:
         - containerPort: 5060
           name: healer-mon
 ---
-apiVersion: monitoring.gke.io/v1
+apiVersion: monitoring.gke.io/v1alpha1
 kind: PodMonitor
 metadata:
   name: healer-monitor
