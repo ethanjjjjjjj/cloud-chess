@@ -169,7 +169,7 @@ def fix_work_queue() -> int:
 def fix_done_pub_sub() -> int:
     """
     Finds all the items in the database which have status `done`
-    and completed more than 30 seconds ago
+    and last queued more than 1.5mins ago
 
     Returns the number of items fixed
     """
@@ -190,7 +190,7 @@ def fix_done_pub_sub() -> int:
         uuid = db.fens.update({"_id": item["_id"]}, item)
 
         # push the uuid to the queue
-        redis_con.rpush(uuid, item["_id"])
+        redis_con.rpush(uuid, str(item))
         num_healed += 1
         print("Updated item:", item)
 
@@ -202,6 +202,7 @@ if __name__ == "__main__":
 
     while True:
         total_queue_fixed = fix_work_queue()
+        total_pub_sub_fixed = fix_done_pub_sub()
 
         time.sleep(5)  # run this loop every 5 seconds
         print("Loop finished; Time Elapsed =", datetime.datetime.utcnow() - starttime)
