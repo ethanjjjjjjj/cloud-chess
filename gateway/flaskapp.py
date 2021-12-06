@@ -3,6 +3,7 @@ Quart App providing a HTTP and WS access to the backend
 """
 
 import datetime
+import io
 import json
 import os
 import sys
@@ -71,7 +72,6 @@ async def get_game():
 
     return pgn_stream()
 
-
 @app.post('/upload_pgn')
 async def upload_game():
     if not s3_con.bucket_exists(PGN_BUCKET):
@@ -80,8 +80,11 @@ async def upload_game():
     # TODO @Ethan generate pgn_uuid for upload/ object name for upload
     pgn_uuid = str(uuid.uuid4())
     object_name = pgn_uuid + ".pgn"
-
-    result = s3_con.put_object(PGN_BUCKET, object_name, await request.body, length=-1)
+    data=await request.body
+    print(data)
+    data= io.BytesIO(data[44:-48])
+    #print(data.readlines())
+    result = s3_con.put_object(PGN_BUCKET, object_name, data, length=-1,part_size=8192*1024)
 
     return { "pgn_uuid": pgn_uuid }
 
