@@ -28,7 +28,7 @@ mongo = pymongo.MongoClient("mongo", 27017)
 mongo_game_db = mongo["game"]
 mongo_pgns=mongo_game_db.pgns
 #connect to s3 server
-s3_conn = minio.Minio(S3_HOST, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY)
+s3_conn = minio.Minio(S3_HOST, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY,secure=False)
 found = s3_conn.bucket_exists("pgns")
 while True:
     uuid=redis_con.blpop("pgn_analysis")
