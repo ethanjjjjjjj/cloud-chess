@@ -152,35 +152,43 @@ async def bot_game(game_uuid = None):
     while True:
         data = json.loads(await websocket.receive())
 
-        if data.get("type", None) == "player_move":
+        if data.get("type", None) != "player_move":
             app.logger.warning("Got invalid type in /ws/bot: %s", data)
             await websocket.send(json.dumps({"type": "error", "msg": "Invalid message type"}))
             continue
 
+        app.logger.info("Got type %s", data["type"])
         if "move" not in data:
             app.logger.warning("Missing fen in ws moved type: %s", data)
             await websocket.send(json.dumps({"type": "error", "msg": "no fen on moved type"}))
             continue
 
         move = data["move"]
+        app.logger.info("Got move %s", move)
+
         #push gameuuid to livegames queue to signify that there has been an update, this allows any bot to calculate the next move so the game does not have to tie up one bot forever
-        redis_con.rpush("livegames",json.dumps({"gameid":game_uuid,"move":move}))
+        redis_con.rpush("livegames", json.dumps({"gameid": game_uuid, "move": move}))
+        app.logger.info("Pushed %s to %s queue", move, game_uuid)
+
         # get bot move back in form {"move":"","state":""} where state is the termination reason or ongoing, if ongoing then websocket connection can close after sending response back to the client.
-        botmovejson=json.loads(str(redis_con.blpop(game_uuid)))
+        botmovejson = json.loads(str(redis_con.blpop(game_uuid)))
 
         game_over = False
         bot_move: Optional[str] = None
-        if botmovejson["state"]!="ongoing":
+
+        if botmovejson["state"] != "ongoing":
             game_over=True
-            if botmovejson["move"]!="":  #if game finished on bot's move
-                bot_move=botmovejson["move"]
+            if botmovejson["move"] != "":  #if game finished on bot's move
+                bot_move = botmovejson["move"]
             else:
                 #game finished with player's move not bot's move
                 pass
-        elif botmovejson["state"]=="ongoing":
-            bot_move=botmovejson["move"]
+        elif botmovejson["state"] == "ongoing":
+            bot_move = botmovejson["move"]
 
         if game_over:
+            app.logger.info("%s game over with bot moving to %s", game_uuid, bot_move)
             await websocket.send(json.dumps({"type": "end_game", "state": botmovejson["state"], "bot_move": bot_move}))
         else:
+            app.logger.info("%s bot moving to %s", game_uuid, bot_move)
             await websocket.send(json.dumps({"type": "bot_move", "bot_move": bot_move}))
