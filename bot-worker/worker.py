@@ -17,7 +17,8 @@ engine1.configure({"Threads":multiprocessing.cpu_count()})
 
 while True:
     #game is in livegames queue if it has an update from the client, uuid and move should be pushed by the gateway
-    gamejson=json.loads(str(redis_con.blpop("livegames")))
+    gamejson=json.loads(redis_con.blpop("livegames")[1].decode("utf-8"))
+    print(gamejson)
     gameuuid=gamejson["gameid"]
     playermove=gamejson["move"]
     #game is looked up in the database to make sure it's not finished already
@@ -43,6 +44,7 @@ while True:
             if outcome==None:
                 result = engine1.play(board, chess.engine.Limit(time=0.1))
                 botmove=result.move
+                print(botmove)
                 board.push(botmove)
                 document["fen"]=board.fen()
                 mongo_livegames.update_one({"_id": document["_id"]},  {"$set":document}, True)
