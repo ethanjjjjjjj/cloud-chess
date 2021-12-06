@@ -167,7 +167,7 @@ async def bot_game(game_uuid = None):
         app.logger.info("Got move %s", move)
 
         #push gameuuid to livegames queue to signify that there has been an update, this allows any bot to calculate the next move so the game does not have to tie up one bot forever
-        redis_con.rpush("livegames", json.dumps({"gameid": game_uuid, "move": move}))
+        redis_con.rpush("livegames", json.dumps({"gameid": game_uuid, "move": move,"type":"bot"}))
         app.logger.info("Pushed %s to %s queue", move, game_uuid)
 
         # get bot move back in form {"move":"","state":""} where state is the termination reason or ongoing, if ongoing then websocket connection can close after sending response back to the client.
