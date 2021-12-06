@@ -39,6 +39,7 @@ redis_con = redis.Redis(host='redis', port=6379)
 mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
 mongo_livegames = game_db.livegames
+mongo_pgns=game_db.pgns
 s3_con = minio.Minio(S3_HOST, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY,secure=False)
 
 
@@ -81,12 +82,13 @@ async def upload_game():
     pgn_uuid = str(uuid.uuid4())
     object_name = pgn_uuid + ".pgn"
     data=await request.body
-    print(data)
     data= io.BytesIO(data[44:-48])
-    #print(data.readlines())
     result = s3_con.put_object(PGN_BUCKET, object_name, data, length=-1,part_size=8192*1024)
-
-    return { "pgn_uuid": pgn_uuid }
+    print(pgn_uuid)
+    document={"_id":pgn_uuid,"status":"pending","analysis":[]}
+    mongo_pgns.insert_one(document)
+    redis_con.rpush("pgn_analysis",pgn_uuid)
+    return { "pgn_uuid": pgn_uuid}
 
 
 @app.route('/fen', methods=['POST'])
