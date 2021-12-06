@@ -136,6 +136,7 @@ async def post():
     return {"status": "ok", "data": result}
 
 
+@app.websocket('/ws/bot')
 @app.websocket('/ws/bot/<game_uuid>')
 async def bot_game(game_uuid = None):
     """ Allows a player to play against a bot """
