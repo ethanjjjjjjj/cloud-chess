@@ -13,9 +13,26 @@ spec:
     spec:
       containers:
       - name: healer
-        image: eu.gcr.io/silent-relic-333216/healer
+        image: eu.gcr.io/silent-relic-333216/healer:latest
         imagePullPolicy: Always
         resources:
           limits:
             memory: "512Mi"
             cpu: "300m"
+        ports:
+        - containerPort: 5060
+          name: healer-mon
+---
+apiVersion: monitoring.gke.io/v1
+kind: PodMonitor
+metadata:
+  name: healer-monitor
+spec:
+  selector:
+    matchLabels:
+      app: healer
+  podMetricsEndpoints:
+  - port: healer-mon
+    path: /metrics
+    scheme: http
+    interval: 30s
