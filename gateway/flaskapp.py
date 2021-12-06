@@ -144,7 +144,7 @@ async def bot_game(game_uuid = None):
         game_uuid = str(uuid.uuid4())
         #initialise game by putting starting position into database
         #TODO implement storing partial pgn here while game is in play, and update with object id after fen stored as a file
-        mongo_livegames.insert_one({"_id":game_uuid,"moves":[],"fen":str(chess.STARTING_FEN),"status":"pending"})
+        mongo_livegames.insert_one({"_id":game_uuid,"moves":[],"fen":str(chess.STARTING_FEN),"status":"pending","type":"bot"})
         #while true pop from queue named (gameuuid)_botmove, push player move to queue (gameuuid)_playermove, if return {"move":"",state=(draw or win)} then end connection else push next player move
         #if game is won on bot's turn, move is still sent back but client needs to know game is over
         await websocket.send(json.dumps({"type": "init", "game_uuid": game_uuid}))
@@ -167,11 +167,11 @@ async def bot_game(game_uuid = None):
         app.logger.info("Got move %s", move)
 
         #push gameuuid to livegames queue to signify that there has been an update, this allows any bot to calculate the next move so the game does not have to tie up one bot forever
-        redis_con.rpush("livegames", json.dumps({"gameid": game_uuid, "move": move,"type":"bot"}))
+        redis_con.rpush("livegames", json.dumps({"gameid": game_uuid, "move": move}))
         app.logger.info("Pushed %s to %s queue", move, game_uuid)
 
         # get bot move back in form {"move":"","state":""} where state is the termination reason or ongoing, if ongoing then websocket connection can close after sending response back to the client.
-        botmovejson = json.loads(str(redis_con.blpop(game_uuid)))
+        botmovejson = json.loads(redis_con.blpop(game_uuid)[1].decode("utf-8"))
 
         game_over = False
         bot_move: Optional[str] = None
