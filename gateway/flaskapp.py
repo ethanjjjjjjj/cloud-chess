@@ -38,7 +38,7 @@ redis_con = redis.Redis(host='redis', port=6379)
 mongo_client = MongoClient('mongo', 27017)
 game_db = mongo_client['game']
 mongo_livegames = game_db.livegames
-s3_con = minio.Minio(S3_HOST, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY)
+s3_con = minio.Minio(S3_HOST, access_key=S3_ACCESS_KEY, secret_key=S3_SECRET_KEY,secure=False)
 
 
 @app.get("/game")
@@ -78,7 +78,7 @@ async def upload_game():
         s3_con.make_bucket(PGN_BUCKET)
 
     # TODO @Ethan generate pgn_uuid for upload/ object name for upload
-    pgn_uuid = ""
+    pgn_uuid = str(uuid.uuid4())
     object_name = pgn_uuid + ".pgn"
 
     result = s3_con.put_object(PGN_BUCKET, object_name, await request.body, length=-1)
