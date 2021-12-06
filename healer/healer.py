@@ -14,17 +14,10 @@ import time
 import uuid
 import redis
 from pymongo import MongoClient
+from prometheus_client import start_http_server, Summary
 
-from opencensus.ext.stackdriver import stats_exporter
-from opencensus.stats import aggregation, measure, stats, view
 
-HEALED_COUNT = measure.MeasureInt("healed_items", "Counter of healed items per second", "second")
-HEALED_VIEW = view.View("healed_items_distribution",
-                        "The distirbution of healed items",
-                        [],
-                        HEALED_COUNT,
-                        aggregation.SumAggregation())
-
+METRIC_FENS_FIXED =  Summary("fens_fixed", "Number of Fens fixed")
 
 redis_con = redis.Redis(host="redis", port=6379)
 ANALYSIS_QUEUE = "fen_analysis"
@@ -169,6 +162,7 @@ def fix_work_queue() -> int:
         num_healed += 1
         print("Requeued item:", item)
 
+    METRIC_FENS_FIXED.observe(num_healed)
     return num_healed
 
 
@@ -204,18 +198,10 @@ def fix_done_pub_sub() -> int:
 
 
 if __name__ == "__main__":
-    stats.stats.view_manager.register_view(HEALED_VIEW)
-    exporter = stats_exporter.new_stats_exporter()
-    print(f"Exporting stats to project {exporter.options.project_id}")
-    stats.stats.view_manager.register_exporter(exporter)
+    start_http_server(5060)
 
     while True:
         total_queue_fixed = fix_work_queue()
-
-        # Record number of items pushed in cloud metrics
-        mmap = stats.stats.stats_recorder.new_measurement_map()
-        mmap.measure_int_put(HEALED_COUNT, total_queue_fixed)
-        mmap.record()
 
         time.sleep(5)  # run this loop every 5 seconds
         print("Loop finished; Time Elapsed =", datetime.datetime.utcnow() - starttime)
