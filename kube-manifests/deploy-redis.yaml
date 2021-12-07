@@ -30,6 +30,8 @@ spec:
 ---
 apiVersion: v1
 kind: Service
+metadata:
+  name: redis
 spec:
   ports:
     - protocol: TCP
@@ -37,14 +39,7 @@ spec:
       targetPort: 6379
   selector:
     app: chess-redis
-  clusterIP: 10.0.128.46
-  clusterIPs:
-    - 10.0.128.46
   type: ClusterIP
-  sessionAffinity: None
-  ipFamilies:
-    - IPv4
-  ipFamilyPolicy: SingleStack
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
