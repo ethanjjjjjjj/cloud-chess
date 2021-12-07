@@ -11,9 +11,16 @@ spec:
       labels:
         app: chess-redis
     spec:
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+            claimName: redis-data
       containers:
       - name: chess-redis
         image: redis
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
         resources:
           limits:
             memory: "256Mi"
@@ -38,3 +45,15 @@ spec:
   ipFamilies:
     - IPv4
   ipFamilyPolicy: SingleStack
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+spec:
+  resources:
+    requests:
+      storage: 16Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce

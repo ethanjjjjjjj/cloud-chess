@@ -11,9 +11,16 @@ spec:
       labels:
         app: chess-mongo
     spec:
+      volumes:
+      - name: mongo-data
+        persistentVolumeClaim:
+            claimName: mongo-data
       containers:
       - name: chess-mongo
         image: eu.gcr.io/silent-relic-333216/mongo:5.0.4-focal
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
         resources:
           limits:
             memory: "256Mi"
@@ -41,3 +48,15 @@ spec:
   - port: 27017
     targetPort: 27017
     name: mongo
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo-data
+spec:
+  resources:
+    requests:
+      storage: 16Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
