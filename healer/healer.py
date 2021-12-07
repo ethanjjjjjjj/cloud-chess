@@ -187,7 +187,7 @@ def fix_done_pub_sub() -> int:
         item["lastqueued"] = (datetime.datetime.utcnow())
 
         # update that item in the mongodb database
-        uuid = db.fens.update({"_id": item["_id"]}, item)
+        uuid = db.fens.updateone({"_id": item["_id"]}, {"$set":item})
 
         # push the uuid to the queue
         redis_con.rpush(uuid, str(item))
