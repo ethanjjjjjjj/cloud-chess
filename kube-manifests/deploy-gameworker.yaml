@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: game-worker
-        image: eu.gcr.io/silent-relic-333216/game-worker
+        image: eu.gcr.io/silent-relic-333216/game-worker:latest
         imagePullPolicy: Always
         env:
         - name: S3_HOST

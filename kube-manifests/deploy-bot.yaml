@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: bot-worker
-        image: eu.gcr.io/silent-relic-333216/bot-worker
+        image: eu.gcr.io/silent-relic-333216/bot-worker:latest
         imagePullPolicy: Always
         resources:
           limits:
