@@ -42,7 +42,7 @@ def throughput(timeout: int = typer.Option(120, help="Time to run for in seconds
     while current_time - start_time <= timedelta(seconds=timeout):
         result = analyse_board(get_random_fen().strip())
         if result is not None:
-            typer.echo(f"Got {result} from API")
+            #typer.echo(f"Got {result} from API")
             completed += 1
         else:
             typer.echo(f"Didn't get a valid response from API")
