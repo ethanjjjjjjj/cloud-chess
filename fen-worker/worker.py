@@ -48,7 +48,7 @@ def main():
                 #update mongo saying work in progress
                 #board=chess.Board(fen=uuid)
                 #board=chess.Board(fen="r5k1/pp2n1p1/5p2/2p2r1p/1P5P/1P2P3/PB4P1/1K3B1R w - - 0 26")
-                result = engine1.analyse(board, chess.engine.Limit(depth=22))
+                result = engine1.analyse(board, chess.engine.Limit(time=5))
                 logger.info("Result of analysis is: %s", result)
                 doc["result"] = str(result)
                 doc["status"] = "done"
