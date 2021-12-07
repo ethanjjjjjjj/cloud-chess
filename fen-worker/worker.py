@@ -22,7 +22,6 @@ def main():
     mongo_game_db = mongo["game"]
     fens = mongo_game_db.fens
     queue_name = "fen_analysis"
-
     engine1 = chess.engine.SimpleEngine.popen_uci("./stockfish14-bmi")
     engine1.configure({"Threads":multiprocessing.cpu_count()})
     try:
