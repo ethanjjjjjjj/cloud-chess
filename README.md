@@ -49,3 +49,6 @@ Authored by: Daniel Jones, Ethan Williams, Matthew Stollery
     -  Terminal 2: docker run -it --rm -p 6379:6379 redis
     -  Terminal 3: docker exec -it [redis-container-name] redis-cli
     -  Terminal 3: lpop work 1
+
+
+    stollaz
