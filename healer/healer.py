@@ -202,7 +202,7 @@ if __name__ == "__main__":
 
     while True:
         total_queue_fixed = fix_work_queue()
-        total_pub_sub_fixed = fix_done_pub_sub()
+        #total_pub_sub_fixed = fix_done_pub_sub()
 
         time.sleep(5)  # run this loop every 5 seconds
         print("Loop finished; Time Elapsed =", datetime.datetime.utcnow() - starttime)
